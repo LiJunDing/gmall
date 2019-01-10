@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <table id="dg" class="easyui-datagrid" title="属性列表"
+           data-options="toolbar:'#tb',singleSelect:true,collapsible:true,url:'datagrid_data1.json',method:'get'">
+        <thead>
+            <tr>
+                <th data-options="field:'id'" width="20%">属性 ID</th>
+                <th data-options="field:'attrName'" width="80%">属性值</th>
+            </tr>
+        </thead>
+
+        <div id="tb" style="padding:5px;height:auto">
+            <div style="margin-bottom:5px">
+                <a href="#" class="easyui-linkbutton" iconCls="icon-add" plain="true">添加</a>
+                <a href="#" class="easyui-linkbutton" iconCls="icon-edit" plain="true">编辑</a>
+                <a href="#" class="easyui-linkbutton" iconCls="icon-remove" plain="true">删除</a>
+            </div><br/>
+            <div>
+                一级分类：
+                <select id="ctg1ForAttrList"  class="easyui-combobox" style="width:100px" ></select>
+                二级分类：
+                <select name="ctg2ForAttrList" id="ctg2ForAttrList"  class="easyui-combobox"  style="width:100px" ></select>
+                三级分类：
+                <select name="ctg3ForAttrList" id="ctg3ForAttrList"  class="easyui-combobox"   style="width:100px" ></select>
+                <a href="#" class="easyui-linkbutton" iconCls="icon-search" plain="true">刷新属性</a>
+            </div><br/>
+        </div>
+    </table>
+</body>
+</html>
