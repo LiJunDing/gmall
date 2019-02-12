@@ -15,4 +15,9 @@ public class ManageController {
     public String attrListPage() {
         return "attrListPage";
     }
+
+    @RequestMapping("spuListPage")
+    public String spuListPage() {
+        return "spuListPage";
+    }
 }

@@ -16,20 +16,203 @@
 
         <div id="tb" style="padding:5px;height:auto">
             <div style="margin-bottom:5px">
-                <a href="#" class="easyui-linkbutton" iconCls="icon-add" plain="true">添加</a>
-                <a href="#" class="easyui-linkbutton" iconCls="icon-edit" plain="true">编辑</a>
-                <a href="#" class="easyui-linkbutton" iconCls="icon-remove" plain="true">删除</a>
+                <a href="javascript:addAttrInfo();" class="easyui-linkbutton" data-options="iconCls:'icon-add',plain:true">添加</a>
+                <a href="javascript:editAttrInfo();" class="easyui-linkbutton" data-options="iconCls:'icon-edit',plain:true">编辑</a>
+                <a href="javascript:deleteAttrInfo();" class="easyui-linkbutton" data-options="iconCls:'icon-remove',plain:true">删除</a>
             </div><br/>
             <div>
                 一级分类：
-                <select id="ctg1ForAttrList"  class="easyui-combobox" style="width:100px" ></select>
+                <select id="ctg1ForAttrList" data-options="valueField:'id',textField:'name',url:'getCatalog1',
+                        onSelect:function(rec){
+                            var url = 'getCatalog2?catalog1Id='+rec.id;
+                            $('#ctg2ForAttrList').combobox('clear');
+                            $('#ctg2ForAttrList').combobox('reload',url);
+                        }
+                    "  class="easyui-combobox" style="width:100px" ></select>
                 二级分类：
-                <select name="ctg2ForAttrList" id="ctg2ForAttrList"  class="easyui-combobox"  style="width:100px" ></select>
+                <select data-options="valueField:'id',textField:'name',
+                        onSelect:function(rec){
+                            var url = 'getCatalog3?catalog2Id='+rec.id;
+                            $('#ctg3ForAttrList').combobox('clear');
+                            $('#ctg3ForAttrList').combobox('reload',url);
+                        }
+                    " name="ctg2ForAttrList" id="ctg2ForAttrList"  class="easyui-combobox"  style="width:100px" ></select>
                 三级分类：
-                <select name="ctg3ForAttrList" id="ctg3ForAttrList"  class="easyui-combobox"   style="width:100px" ></select>
-                <a href="#" class="easyui-linkbutton" iconCls="icon-search" plain="true">刷新属性</a>
+                <select data-options="valueField:'id',textField:'name'" name="ctg3ForAttrList" id="ctg3ForAttrList" class="easyui-combobox" style="width:100px"></select>
+                <a href="javascript:reloadAttrList()" class="easyui-linkbutton" data-options="iconCls:'icon-search',plain:true" >刷新属性</a>
             </div><br/>
         </div>
     </table>
+
+    <div id="attr_dlg" class="easyui-dialog" title="属性编辑" style="width:600px;height:500px;padding:5px"
+         data-options="closed:true,buttons:'#bb',iconCls:'icon-save',resizable:true,modal:true"  >
+        <form id="attrForm">
+            <br/>
+            <label>属性名称:</label>
+            <input id="attrName" name="attrName" class="easyui-textbox" data-options="" style="width:200px"/>
+            <br/><br/>
+            <table id="dg_av" class="easyui-datagrid" title="属性值列表"></table>
+        </form>
+    </div>
+
+    <div id="bb">
+        <a href="javascript:saveAttr();" class="easyui-linkbutton">保存</a>
+        <a href="javascript:closeDialog();" class="easyui-linkbutton">关闭</a>
+    </div>
+
+    <script language="JavaScript">
+
+        function deleteAttrInfo() {
+
+            var row = $("#dg").datagrid("getSelected");
+
+            if(row) {
+
+                var attrJSON = {};
+                var attrId = row.id;
+                var attrName = row.attrName;
+
+                attrJSON["attrValueList[0].attrId"] = attrId;
+                attrJSON["attrName"] = attrName;
+
+                $.post("deleteAttr",attrJSON,function(){
+                    reloadAttrList();
+                });
+            }
+        }
+
+        function editAttrInfo() {
+
+            var row = $("#dg").datagrid("getSelected");
+
+            if(row) {
+
+                var attrIdJSON = {};
+
+                var attrId = row.id;
+                var attrName = row.attrName;
+
+                attrIdJSON["attrId"] = attrId;
+
+                $.post("getAttrValueList",attrIdJSON,function(data){
+
+                    $("#dg_av").datagrid('loadData',{
+                        total:0,rows:[]
+                    });
+
+                    $("#attr_dlg").dialog("open");
+
+                    initAttrValueDatagrid();
+
+                    $("#attrName").textbox('setText',attrName);
+
+                    for(var i = 0; i < data.length; i++){
+
+                        $("#dg_av").datagrid('appendRow',{
+                            id:data[i].id,
+                            valueName:data[i].valueName
+                        });
+
+                    };
+
+                });
+            }
+        }
+
+        function closeDialog() {
+
+            $("#attrId").val("");
+            $("#attrName").textbox('clear');
+            $("#dg_av").datagrid('loadData',{
+                total:0,rows:[]
+            });
+
+            $("#attr_dlg").dialog("close");
+        }
+
+        function saveAttr() {
+
+            var attrJSON = {};
+
+            var catalog3Id = $("#ctg3ForAttrList").combobox("getValue");
+            attrJSON["catalog3Id"] = catalog3Id;
+
+            var attrName = $("#attrName").textbox("getValue");
+            attrJSON["attrName"] = attrName;
+
+            var rows = $("#dg_av").datagrid("getRows");
+            $(rows).each(function(i,row){
+                attrJSON["attrValueList[" + i + "].valueName"] = row.valueName;
+            });
+
+            $.post("saveAttr",attrJSON,function(data){
+                reloadAttrList();
+                closeDialog();
+            });
+        }
+
+        function initAttrValueDatagrid() {
+            $("#dg_av").datagrid({
+                onDblClickRow: function (rowIndex, rowData) {
+
+                    $("#dg_av").datagrid("beginEdit", rowIndex);
+
+                    var valueName = rowData.valueName;
+                    $("input.datagrid-editable-input").val(valueName).bind("blur",function(evt){
+                        $("#dg_av").datagrid('endEdit',rowIndex);
+                    });
+                },
+                columns:[[
+                    { field:'id',title:'编号',width:'20%'},
+                    { field:'valueName',title:'属性值名称',width:'80%',
+                        editor: {
+                            type: 'validatebox',
+                            options: { required: true}
+                        }
+                    }
+                ]],
+                toolbar:[{text:'添加',iconCls:'icon-add',
+                    handler:function () {
+                        $("#dg_av").datagrid('appendRow',{id:'',valueName:''});
+                    }
+                },
+                '-',
+                {text:'删除',iconCls:'icon-remove',
+                    handler:function () {
+                        var row = $("#dg_av").datagrid('getSelected');
+                        if (row) {
+                            var rowIndex = $("#dg_av").datagrid('getRowIndex', row);
+                            $("#dg_av").datagrid('deleteRow', rowIndex);
+                        }
+                    }
+                }]
+            });
+        }
+
+        function addAttrInfo() {
+
+            $("#attrId").val("");
+            $("#attrName").textbox('clear');
+            $("#dg_av").datagrid('loadData',{
+                total:0,rows:[]
+            });
+
+            $("#attr_dlg").dialog("open");
+
+            initAttrValueDatagrid();
+
+        }
+
+        function reloadAttrList() {
+
+            var catalog3Id = $("#ctg3ForAttrList").combobox("getValue");
+
+            if(catalog3Id) {
+                $("#dg").datagrid({
+                    url: 'getAttrList?catalog3Id=' + catalog3Id
+                });
+            }
+        }
+    </script>
 </body>
 </html>
